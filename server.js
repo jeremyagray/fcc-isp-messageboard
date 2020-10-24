@@ -1,70 +1,130 @@
 'use strict';
 
-var express     = require('express');
-var bodyParser  = require('body-parser');
-var expect      = require('chai').expect;
-var cors        = require('cors');
+// Load the environment variables.
+require('dotenv').config();
 
-var apiRoutes         = require('./routes/api.js');
-var fccTestingRoutes  = require('./routes/fcctesting.js');
-var runner            = require('./test-runner');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const express = require('express');
+const helmet = require('helmet');
+const mongoose = require('mongoose');
 
-var app = express();
+// Routing.
+const apiRoutes = require('./routes/api.js');
 
-app.use('/public', express.static(process.cwd() + '/public'));
+// FCC testing.
+const fccTestingRoutes = require('./routes/fcctesting.js');
+const runner = require('./test-runner');
 
-app.use(cors({origin: '*'})); //For FCC testing purposes only
+// Express app.
+const app = express();
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+async function start()
+{
+  // Configure mongoose.
+  const MONGOOSE_OPTIONS = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false
+  };
 
-//Sample front-end
-app.route('/b/:board/')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/views/board.html');
-  });
-app.route('/b/:board/:threadid')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/views/thread.html');
-  });
+  try
+  {
+    await mongoose.connect(process.env.MONGO_URI, MONGOOSE_OPTIONS);
 
-//Index page (static HTML)
-app.route('/')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/views/index.html');
-  });
-
-//For FCC testing purposes
-fccTestingRoutes(app);
-
-//Routing for API 
-apiRoutes(app);
-
-//Sample Front-end
-
+    // Helmet middleware.
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "localhost", "*.jquery.com", "'unsafe-inline'"],
+          scriptSrcElem: ["'self'", "localhost", "*.jquery.com", "'unsafe-inline'"],
+          styleSrc: ["'self'", "localhost", "'unsafe-inline'"]
+        }},
+      referrerPolicy: {
+        policy: "same-origin"
+      },
+      frameguard: {
+        action: "sameorigin"
+      }}));
     
-//404 Not Found Middleware
-app.use(function(req, res, next) {
-  res.status(404)
-    .type('text')
-    .send('Not Found');
-});
+    // FCC testing.
+    app.use(cors({origin: '*'}));
 
-//Start our server and tests!
-app.listen(process.env.PORT || 3000, function () {
-  console.log("Listening on port " + process.env.PORT);
-  if(process.env.NODE_ENV==='test') {
-    console.log('Running Tests...');
-    setTimeout(function () {
-      try {
-        runner.run();
-      } catch(e) {
-        var error = e;
-          console.log('Tests are not valid:');
-          console.log(error);
-      }
-    }, 1500);
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({extended: true}));
+
+    app.set('trust proxy', true);
+
+    // Set static directory.
+    app.use('/public', express.static(process.cwd() + '/public'));
+
+    // Serve static index.
+    app.route('/')
+      .get(function(request, response)
+           {
+             return response.sendFile(process.cwd() + '/views/index.html');
+           });
+
+    // Sample front-end.
+    app.route('/b/:board/')
+      .get((request, response) =>
+           {
+             response.sendFile(process.cwd() + '/views/board.html');
+           });
+    app.route('/b/:board/:threadid')
+      .get((request, response) =>
+           {
+             response.sendFile(process.cwd() + '/views/thread.html');
+           });
+
+    // FCC testing.
+    fccTestingRoutes(app);
+
+    // API routes.
+    apiRoutes(app);  
+    
+    // 404 middleware.
+    app.use(function(request, response, next)
+            {
+              return response.status(404)
+                .type('text')
+                .send('Not Found');
+            });
+
+    // Run server and/or tests.
+    const port = process.env.PORT || 3000;
+    const name = 'fcc-isp-messageboard';
+    const version = '0.0.1';
+
+    app.listen(port, function ()
+               {
+                 console.log(`${name}@${version} listening on port ${port}...`);
+                 if (process.env.NODE_ENV ==='test')
+                 {
+                   console.log(`${name}@${version} running unit and functional tests...`);
+                   setTimeout(function ()
+                              {
+                                try
+                                {
+                                  runner.run();
+                                }
+                                catch (error)
+                                {
+                                  console.log(`${name}@${version}:  some tests failed:`);
+                                  console.error(error);
+                                }
+                              }, 1500);
+                 }
+               });
+
+    // Export app for testing.
+    module.exports = app;
   }
-});
+  catch (error)
+  {
+    console.error(error);
+  }
+}
 
-module.exports = app; //for testing
+start();

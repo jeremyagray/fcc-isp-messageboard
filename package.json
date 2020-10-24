@@ -6,7 +6,7 @@
   "description": "FCC ISP Anonymous Message Board Project",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "nodemon server.js",
     "test": "mocha --timeout 5000 --recursive --exit --ui tdd tests/"
   },
   "dependencies": {
