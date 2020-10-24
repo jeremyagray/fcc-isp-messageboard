@@ -72,7 +72,7 @@ async function start()
            {
              response.sendFile(process.cwd() + '/views/board.html');
            });
-    app.route('/b/:board/:threadid')
+    app.route('/b/:board/:thread')
       .get((request, response) =>
            {
              response.sendFile(process.cwd() + '/views/thread.html');
