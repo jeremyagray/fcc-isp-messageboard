@@ -59,6 +59,10 @@ async function start()
     // Set static directory.
     app.use('/public', express.static(process.cwd() + '/public'));
 
+    // Set view directory and view engine.
+    app.set('views', process.cwd() + '/views');
+    app.set('view engine', 'pug');
+
     // Serve static index.
     app.route('/')
       .get(function(request, response)
@@ -85,11 +89,14 @@ async function start()
     apiRoutes(app);  
     
     // 404 middleware.
-    app.use(function(request, response, next)
+    app.use((request, response) =>
             {
-              return response.status(404)
-                .type('text')
-                .send('Not Found');
+              // return response.status(404)
+              //   .type('text')
+              //   .send('Not Found');
+              return response
+                .status(404)
+                .render('404');
             });
 
     // Run server and/or tests.
