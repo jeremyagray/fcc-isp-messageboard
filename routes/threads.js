@@ -14,11 +14,8 @@ router
        {
        });
 
-// I can report a thread and change it's reported value to true by sending a PUT request to /api/threads/{board} and pass along the thread_id. (Text response will be 'success')
 router
-  .put('/:board', async (request, response) =>
-       {
-       });
+  .put('/:board', threadController.putReportThread);
 
 // I can delete a thread completely if I send a DELETE request to /api/threads/{board} and pass along the thread_id & delete_password. (Text response will be 'incorrect password' or 'success')
 router
