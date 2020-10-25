@@ -10,7 +10,8 @@ const helmet = require('helmet');
 const mongoose = require('mongoose');
 
 // Routing.
-const apiRoutes = require('./routes/api.js');
+const threadRoutes = require('./routes/threads.js');
+const replyRoutes = require('./routes/replies.js');
 
 // FCC testing.
 const fccTestingRoutes = require('./routes/fcctesting.js');
@@ -85,8 +86,9 @@ async function start()
     // FCC testing.
     fccTestingRoutes(app);
 
-    // API routes.
-    apiRoutes(app);  
+    // Application routes.
+    app.use('/api/threads', threadRoutes);
+    app.use('/api/replies', replyRoutes);
     
     // 404 middleware.
     app.use((request, response) =>

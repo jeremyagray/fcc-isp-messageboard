@@ -28,5 +28,3 @@ function threadModel(board)
 }
 
 module.exports = threadModel;
-
-// exports.Threads = threadModel;
