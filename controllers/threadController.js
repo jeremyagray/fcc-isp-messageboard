@@ -44,8 +44,8 @@ exports.postNewThread = async function(request, response)
     }
     else
     {
+      console.log('hello');
       return response
-        .status(200)
         .redirect(`/b/${request.params.board}/`);
     }
   }
