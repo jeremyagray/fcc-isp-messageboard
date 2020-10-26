@@ -8,7 +8,7 @@ exports.validateBoard = async function(board)
   {
     const boards = await Boards.find({'board': board}).exec();
 
-    if (boards)
+    if (boards.length > 0)
     {
       return true;
     }
