@@ -3,24 +3,49 @@
 const mongoose = require('mongoose');
 
 // Modified from:  https://stackoverflow.com/a/679937
+// Return true if object is an object and has no properties.
+// Otherwise, return false.
 function isEmpty(object)
 {
-  for (let property in object)
+  if (typeof object !== 'string'
+      && typeof object !== 'number'
+      && typeof object !== 'boolean'
+      && typeof object !== 'null'
+      && typeof object !== 'undefined'
+      && object !== null
+      && object !== undefined
+      && object !== '')
   {
-    if(object.hasOwnProperty(property))
+    for (let property in object)
     {
-      return false;
+      if(object.hasOwnProperty(property))
+      {
+        return false;
+      }
     }
+
+    return true;
   }
-
-  return true;
+  else
+  {
+    return false;
+  }
 }
 
-function getValidField(field, json)
+// Get an object property (JSON field) if field exists, is not the
+// empty string, is not null, and is not undefined.
+function getValidField(field, obj)
 {
-  return (json.hasOwnProperty(field) && json[field] != '') ? json[field] : null;
+  return (obj.hasOwnProperty(field)
+          && obj[field] !== ''
+          && obj[field] !== null
+          && obj[field] !== undefined) ? obj[field] : null;
 }
 
+// Validate a string as a possible Mongoose.ObjectId.
+// str should not be null, undefined, empty, or not 24 characters
+// long.  str should be in hexadecimal.  str should equal `new
+// mongoose.Types.ObjectId(str).toString()`.
 function isValidId(str)
 {
   if (str === null
