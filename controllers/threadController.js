@@ -4,6 +4,8 @@ const Threads = require('../models/threads.js');
 
 const boardController = require('../controllers/boardController.js');
 
+const util = require('../utilities');
+
 exports.postNewThread = async function(request, response)
 {
   const now = new Date();
@@ -44,7 +46,6 @@ exports.postNewThread = async function(request, response)
     }
     else
     {
-      console.log('hello');
       return response
         .redirect(`/b/${request.params.board}/`);
     }
@@ -62,10 +63,22 @@ exports.putReportThread = async function(request, response)
 {
   const now = new Date();
   let threads;
+  let id;
 
   // Sanitize and validate.
   const board = request.params.board;
-  const id = request.body.thread_id;
+
+  if (request.body.thread_id === ''
+      || (! util.isValidId(request.body.thread_id)))
+  {
+    return response
+      .status(500)
+      .json({'error': 'could not report thread'});
+  }
+  else
+  {
+    id = request.body.thread_id;
+  }
 
   if (await boardController.validateBoard(board))
   {
