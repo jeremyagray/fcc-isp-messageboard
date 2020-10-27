@@ -17,10 +17,7 @@ router
 router
   .put('/:board', threadController.putReportThread);
 
-// I can delete a thread completely if I send a DELETE request to /api/threads/{board} and pass along the thread_id & delete_password. (Text response will be 'incorrect password' or 'success')
 router
-  .delete('/:board', async (request, response) =>
-          {
-          });
+  .delete('/:board', threadController.deleteThread);
 
 module.exports = router;

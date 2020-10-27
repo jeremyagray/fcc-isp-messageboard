@@ -159,8 +159,242 @@ suite('Functional Tests', function()
                       {
                       });
 
-                suite('DELETE', function()
+                suite('DELETE /api/threads/:board routes', function()
                       {
+                        test('Good DELETE:  valid board, valid id, valid password', function(done)
+                             {
+                               const successMessage = 'success';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f9632f9e368493ed0c62db1',
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 200);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, successMessage, 'Success messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  invalid board, valid id, valid password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/lieutenant')
+                                 .send({
+                                   '_id': '5f9632f9e368493ed0c62db1',
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, valid id, invalid password', function(done)
+                             {
+                               const errorMessage = 'incorrect password';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f963391be3afc3f24fe45c0',
+                                   'delete_password': 'bad'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, valid id, empty password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f963391be3afc3f24fe45c0',
+                                   'delete_password': ''
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, valid id, missing password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f963391be3afc3f24fe45c0'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, non-existent id, valid password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f9632f9e368493ed0c62db1',
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, invalid (short) id, valid password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f9632f9e368493ed0c62db',
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, invalid (long) id, valid password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f9632f9e368493ed0c62db11',
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, invalid (non-hexadecimal) id, valid password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '5f9632f9e368493ed0c62dbz',
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, empty id, valid password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   '_id': '',
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, missing id, valid password', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({
+                                   'delete_password': 'password'
+                                 })
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
+
+                        test('Bad DELETE:  valid board, empty body', function(done)
+                             {
+                               const errorMessage = 'invalid input';
+
+                               chai.request(server)
+                                 .delete('/api/threads/general')
+                                 .send({})
+                                 .end(function(error, response)
+                                      {
+                                        assert.equal(response.status, 400);
+                                        expect('Content-Type', /text\/html/);
+                                        assert.equal(response.text, errorMessage, 'Error messages should be equal.');
+
+                                        done();
+                                      });
+                             });
                       });
 
                 suite('PUT /api/threads/:board routes', function()
