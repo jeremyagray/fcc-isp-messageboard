@@ -20,8 +20,7 @@ const runner = require('./test-runner');
 // Express app.
 const app = express();
 
-async function start()
-{
+async function start() {
   // Configure mongoose.
   const MONGOOSE_OPTIONS = {
     useNewUrlParser: true,
@@ -29,24 +28,23 @@ async function start()
     useFindAndModify: false
   };
 
-  try
-  {
+  try {
     await mongoose.connect(process.env.MONGO_URI, MONGOOSE_OPTIONS);
 
     // Helmet middleware.
     app.use(helmet({
       contentSecurityPolicy: {
         directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "localhost", "*.jquery.com", "'unsafe-inline'"],
-          scriptSrcElem: ["'self'", "localhost", "*.jquery.com", "'unsafe-inline'"],
-          styleSrc: ["'self'", "localhost", "'unsafe-inline'"]
+          defaultSrc: ['\'self\''],
+          scriptSrc: ['\'self\'', 'localhost', '*.jquery.com', '\'unsafe-inline\''],
+          scriptSrcElem: ['\'self\'', 'localhost', '*.jquery.com', '\'unsafe-inline\''],
+          styleSrc: ['\'self\'', 'localhost', '\'unsafe-inline\'']
         }},
       referrerPolicy: {
-        policy: "same-origin"
+        policy: 'same-origin'
       },
       frameguard: {
-        action: "sameorigin"
+        action: 'sameorigin'
       }}));
     
     // FCC testing.
@@ -66,22 +64,19 @@ async function start()
 
     // Serve static index.
     app.route('/')
-      .get(function(request, response)
-           {
-             return response.sendFile(process.cwd() + '/views/index.html');
-           });
+      .get(function(request, response) {
+        return response.sendFile(process.cwd() + '/views/index.html');
+      });
 
     // Sample front-end.
     app.route('/b/:board/')
-      .get((request, response) =>
-           {
-             response.sendFile(process.cwd() + '/views/board.html');
-           });
+      .get((request, response) => {
+        response.sendFile(process.cwd() + '/views/board.html');
+      });
     app.route('/b/:board/:thread')
-      .get((request, response) =>
-           {
-             response.sendFile(process.cwd() + '/views/thread.html');
-           });
+      .get((request, response) => {
+        response.sendFile(process.cwd() + '/views/thread.html');
+      });
 
     // FCC testing.
     fccTestingRoutes(app);
@@ -91,47 +86,38 @@ async function start()
     app.use('/api/replies', replyRoutes);
     
     // 404 middleware.
-    app.use((request, response) =>
-            {
-              // return response.status(404)
-              //   .type('text')
-              //   .send('Not Found');
-              return response
-                .status(404)
-                .render('404');
-            });
+    app.use((request, response) => {
+      // return response.status(404)
+      //   .type('text')
+      //   .send('Not Found');
+      return response
+        .status(404)
+        .render('404');
+    });
 
     // Run server and/or tests.
     const port = process.env.PORT || 3000;
     const name = 'fcc-isp-messageboard';
     const version = '0.0.1';
 
-    app.listen(port, function ()
-               {
-                 console.log(`${name}@${version} listening on port ${port}...`);
-                 if (process.env.NODE_ENV ==='test')
-                 {
-                   console.log(`${name}@${version} running unit and functional tests...`);
-                   setTimeout(function ()
-                              {
-                                try
-                                {
-                                  runner.run();
-                                }
-                                catch (error)
-                                {
-                                  console.log(`${name}@${version}:  some tests failed:`);
-                                  console.error(error);
-                                }
-                              }, 1500);
-                 }
-               });
+    app.listen(port, function () {
+      console.log(`${name}@${version} listening on port ${port}...`);
+      if (process.env.NODE_ENV ==='test') {
+        console.log(`${name}@${version} running unit and functional tests...`);
+        setTimeout(function () {
+          try {
+            runner.run();
+          } catch (error) {
+            console.log(`${name}@${version}:  some tests failed:`);
+            console.error(error);
+          }
+        }, 1500);
+      }
+    });
 
     // Export app for testing.
     module.exports = app;
-  }
-  catch (error)
-  {
+  } catch (error) {
     console.error(error);
   }
 }
