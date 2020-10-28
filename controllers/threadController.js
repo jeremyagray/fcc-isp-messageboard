@@ -84,7 +84,7 @@ exports.putReportThread = [
       id = request.body.thread_id;
     } else {
       return response
-        .status(500)
+        .status(400)
         .json({'error': 'could not report thread'});
     }
 
@@ -92,7 +92,7 @@ exports.putReportThread = [
       threads = Threads(board);
     } else {
       return response
-        .status(500)
+        .status(400)
         .json({'error': 'could not report thread'});
     }
 
@@ -105,7 +105,7 @@ exports.putReportThread = [
 
     if (updatedThread === null) {
       return response
-        .status(500)
+        .status(400)
         .json({'error': 'could not report thread'});
     } else {
       return response
