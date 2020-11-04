@@ -20,8 +20,6 @@ threadSchema.virtual('replies', {
   justOne: false
 });
 
-// const threadModel = mongoose.model('Thread', threadSchema);
-
 function threadModel(board) {
   return mongoose.model(`${board}Thread`, threadSchema);
 }

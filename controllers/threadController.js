@@ -6,6 +6,7 @@ const {body, param, validationResult} = require('express-validator');
 const Threads = require('../models/threads.js');
 
 const boardController = require('./boardController.js');
+const replyController = require('./replyController.js');
 
 const util = require('../utilities');
 
@@ -63,6 +64,80 @@ exports.postNewThread = [
         return response
           .status(500)
           .redirect('/');
+      }
+    }
+  }
+];
+
+exports.getThreads = [
+
+  // Sanitize and validate.
+  param('board').escape().stripLow(true).trim().isLength({min: 1}).isAlphanumeric().withMessage('Board name should be a non-empty, alphanumeric string.'),
+
+  async function(request, response) {
+    const now = new Date();
+    const errors = validationResult(request);
+
+    if (! errors.isEmpty()) {
+      return response
+        .status(400)
+        .json({'error': 'invalid input'});
+    } else {
+      try {
+        let threads;
+        const board = request.params.board;
+        
+        // Validate the board and then return the thread model.
+        if (await boardController.validateBoard(board)) {
+          threads = Threads(board);
+        } else {
+          // should re-render form with invalid board error
+          return response
+            .status(400)
+            .json({'error': 'invalid board'});
+        }
+
+        // Get the sorted list of threads.
+        const allThreads = await threads.find({}).sort({bumped_on: 'desc'}).limit(10).exec();
+
+        if (allThreads === null) {
+          return response
+            .status(200)
+            .json({'threads': []});
+        } else {
+          let num = 0;
+
+          // Set number of threads to return.
+          if (allThreads.length > 10) {
+            num = 10;
+          } else {
+            num = allThreads.length;
+          }
+
+          let summary = [];
+          for (let i = 0; i < num; i++)
+          {
+            summary.push({
+              '_id': allThreads[i]._id,
+              'replies': await replyController.getReplies(board,
+                                                          allThreads[i]._id,
+                                                          3)
+            });
+          }
+
+          return response
+            .status(200)
+            .json({
+              'threads': summary
+            });
+        }
+      } catch (error) {
+        console.error(`error getting thread or replies for board ${request.params.board} at ${now.toUTCString()}...`);
+        console.error(error);
+
+        return response
+          .status(500)
+          .json({'error': `error getting thread or replies for board ${request.params.board} at ${now.toUTCString()}...`});
       }
     }
   }
@@ -155,7 +230,7 @@ exports.deleteThread = [
       const doc = await threads.findById(id).exec();
 
       if (doc === null) {
-        console.log('no thread');
+        // console.log('no thread');
         return response
           .status(400)
           .send('invalid input');
@@ -171,14 +246,14 @@ exports.deleteThread = [
               .send('invalid input');
           }
         } else {
-          console.log('bad password');
+          // console.log('bad password');
           return response
             .status(400)
             .send('incorrect password');
         }
       } else {
-        console.log('doc id does not match');
-        console.log(doc._id);
+        // console.log('doc id does not match');
+        // console.log(doc._id);
         return response
           .status(400)
           .send('invalid input');

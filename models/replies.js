@@ -2,7 +2,7 @@
 
 const mongoose = require('mongoose');
 
-// Create a reply schemaa and model.
+// Create a reply schema and model.
 const replySchema = new mongoose.Schema(
   {
     text: {type: String, required: true},
@@ -12,6 +12,8 @@ const replySchema = new mongoose.Schema(
     reported: {type: Boolean, required: true, default: false}
   });
 
-const replyModel = mongoose.model('Reply', replySchema);
+function replyModel(board) {
+  return mongoose.model(`${board}Reply`, replySchema);
+}
 
 module.exports = replyModel;
