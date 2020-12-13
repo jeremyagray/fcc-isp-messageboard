@@ -1,15 +1,15 @@
 'use strict';
 
 // const Boards = require('../models/boards.js');
-const Threads = require('../models/threads.js');
+// const Threads = require('../models/threads.js');
 const Replies = require('../models/replies.js');
 
 exports.getReplies = async function(board, threadId, num) {
   let replyModel = Replies(board);
   let replies = await replyModel
-      .find({thread_id: threadId})
-      .sort({created_on: 'asc'})
-      .exec();
+    .find({thread_id: threadId})
+    .sort({created_on: 'asc'})
+    .exec();
 
   // console.log(replies);
   if (replies === null) {
@@ -27,11 +27,10 @@ exports.getReplies = async function(board, threadId, num) {
     }
 
     let ids = [];
-    for (let i = 0; i < items; i++)
-    {
+    for (let i = 0; i < items; i++) {
       ids.push(replies[i]._id);
     }
 
     return ids;
   }
-}
+};

@@ -115,13 +115,12 @@ exports.getThreads = [
           }
 
           let summary = [];
-          for (let i = 0; i < num; i++)
-          {
+          for (let i = 0; i < num; i++) {
             summary.push({
               '_id': allThreads[i]._id,
               'replies': await replyController.getReplies(board,
-                                                          allThreads[i]._id,
-                                                          3)
+                allThreads[i]._id,
+                3)
             });
           }
 

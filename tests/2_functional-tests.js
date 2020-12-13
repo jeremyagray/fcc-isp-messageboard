@@ -299,7 +299,9 @@ suite('Functional Tests', function() {
         try {
           // Get the correct threads from the DB.
           const threads = await Threads(testingBoardName).find({}).sort({bumped_on: 'desc'}).limit(10).exec();
-          const dbThreads = threads.map(function(item) {return item._id.toString();});
+          const dbThreads = threads.map(function(item) {
+            return item._id.toString();
+          });
 
           response = await chai.request(server)
             .get(testingThreadEndpoint);
@@ -317,7 +319,9 @@ suite('Functional Tests', function() {
           // Check the replies on each thread.
           for (let i = 0; i < dbThreads.length; i++) {
             let dbReplies = await replyController.getReplies(testingBoardName, dbThreads[i], 3);
-            dbReplies = dbReplies.map(function(item) {return item.toString();})
+            dbReplies = dbReplies.map(function(item) {
+              return item.toString();
+            });
             assert.deepEqual(dbReplies, response.body.threads[i].replies, 'The reply list from the database and response should match.');
           }
         } catch (error) {
