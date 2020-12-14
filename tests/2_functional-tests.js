@@ -355,7 +355,7 @@ suite('Functional Tests', function() {
 
           assert.equal(response.status, 400);
           assert.isObject(response.body);
-          assert.equal(response.body.error, 'invalid input', 'Error messages should match.');
+          assert.equal(response.body.error, 'invalid request', 'Error messages should match.');
         } catch (error) {
           console.log(error);
           throw error;

@@ -3,18 +3,45 @@
 const express = require('express');
 const router = express.Router();
 
+const {
+  validateBoard,
+  validateId,
+  validatePassword,
+  validateText,
+  validateThreadId,
+  validationErrorRedirector,
+  validationErrorReporterHTML,
+  validationErrorReporterJSON
+} = require('../middleware/validation.js');
+
 const threadController = require('../controllers/threadController.js');
 
 router
-  .post('/:board', threadController.postNewThread);
+  .post('/:board',
+    validateBoard,
+    validateText,
+    validatePassword,
+    validationErrorRedirector,
+    threadController.postNewThread);
 
 router
-  .get('/:board', threadController.getThreads);
+  .get('/:board',
+    validateBoard,
+    validationErrorReporterJSON,
+    threadController.getThreads);
 
 router
-  .put('/:board', threadController.putReportThread);
+  .put('/:board',
+    validateBoard,
+    validateThreadId,
+    threadController.putReportThread);
 
 router
-  .delete('/:board', threadController.deleteThread);
+  .delete('/:board',
+    validateBoard,
+    validateId,
+    validatePassword,
+    validationErrorReporterHTML,
+    threadController.deleteThread);
 
 module.exports = router;
