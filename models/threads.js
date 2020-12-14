@@ -2,7 +2,7 @@
 
 const mongoose = require('mongoose');
 
-// Create a threa schema and model.
+// Create a thread schema and model.
 const threadSchema = new mongoose.Schema(
   {
     text: {type: String, required: true},
