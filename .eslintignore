@@ -1,3 +1,6 @@
 assertion-analyser.js
+public/board.js
+public/index.js
+public/thread.js
 routes/fcctesting.js
 test-runner.js
