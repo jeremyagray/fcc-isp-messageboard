@@ -16,32 +16,32 @@ const replyController = require('../controllers/replyController.js');
 
 router
   .post('/:board',
-        validateText,
-        validatePassword,
-        validateThreadId,
-        validateBoard,
-        validationErrorReporterJSON,
-        replyController.postNewReply);
+    validateText,
+    validatePassword,
+    validateThreadId,
+    validateBoard,
+    validationErrorReporterJSON,
+    replyController.postNewReply);
 
 router
   .get('/:board',
-       validateBoard,
-       validateThreadId,
-       validationErrorReporterJSON,
-       replyController.getAllReplies);
+    validateBoard,
+    validateThreadId,
+    validationErrorReporterJSON,
+    replyController.getAllReplies);
 
 router
   .put('/:board',
-       validateReplyId,
-       validateThreadId,
-       validationErrorReporterJSON,
-       replyController.putReportReply);
+    validateReplyId,
+    validateThreadId,
+    validationErrorReporterJSON,
+    replyController.putReportReply);
 
 router
   .delete('/:board',
-          validateReplyId,
-          validateThreadId,
-          validationErrorReporterJSON,
-          replyController.deleteReply);
+    validateReplyId,
+    validateThreadId,
+    validationErrorReporterJSON,
+    replyController.deleteReply);
 
 module.exports = router;

@@ -5,7 +5,6 @@ const router = express.Router();
 
 const {
   validateBoard,
-  validateId,
   validatePassword,
   validateText,
   validateThreadId,
@@ -39,7 +38,7 @@ router
 router
   .delete('/:board',
     validateBoard,
-    validateId,
+    validateThreadId,
     validatePassword,
     validationErrorReporterHTML,
     threadController.deleteThread);
