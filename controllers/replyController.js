@@ -1,12 +1,11 @@
 'use strict';
 
-// const Boards = require('../models/boards.js');
 const Replies = require('../models/replies.js');
 const Threads = require('../models/threads.js');
 
 const boardController = require('./boardController.js');
 
-exports.getReplies = async function(board, threadId, num = null) {
+exports.getReplies = async function(board, threadId) {
   // console.log('hello from here');
   let replyModel = Replies(board);
   let replies = await replyModel
@@ -16,41 +15,31 @@ exports.getReplies = async function(board, threadId, num = null) {
 
   if (replies === null) {
     return [];
-  } else {
-    let items = 0;
-
-    // Set number of replies to return.
-    if (num === null) {
-      // Return all replies.
-      items = replies.length;
-    } else {
-      // Return either num replies or all of them.
-      if (replies.length > num) {
-        items = num;
-      } else {
-        items = replies.length;
-      }
-    }
-
-    let ids = [];
-    for (let i = 0; i < items; i++) {
-      ids.push(replies[i]._id);
-    }
-
-    return ids;
   }
+
+  return replies;
 };
 
-// I can POST a reply to a thead on a specific board by passing form data text, delete_password, & thread_id to /api/replies/{board} and it will also update the bumped_on date to the comments date.(Recomend res.redirect to thread page /b/{board}/{thread_id}) In the thread's 'replies' array will be saved _id, text, created_on, delete_password, & reported.
+// POST /api/replies/:board request
+//
+// {
+//   'text': string,
+//   'delete_password': string,
+//   'thread_id': MongoId
+// }
+//
+// POST /api/replies/:board response
+//
+// redirect /b/:board/:thread_id
 
 exports.postNewReply = async function(request, response) {
-  let replies;
-  let threads;
+  let replyModel;
+  let threadsModel;
   let now = new Date();
   
   if (await boardController.validateBoard(request.params.board)) {
-    replies = Replies(request.params.board);
-    threads = Threads(request.params.board);
+    replyModel = Replies(request.params.board);
+    threadsModel = Threads(request.params.board);
   } else {
     // Re-render form with invalid board error.
     return response.redirect('/');
@@ -63,7 +52,7 @@ exports.postNewReply = async function(request, response) {
     created_on: now
   };
     
-  const reply = await replies.create(replyData);
+  const reply = await replyModel.create(replyData);
 
   if (reply === null) {
     return response
@@ -71,8 +60,8 @@ exports.postNewReply = async function(request, response) {
       .json({'error': 'could not create reply'});
   }
 
-  const thread = await threads.findByIdAndUpdate(request.body.thread_id,
-                                                 {'bumped_on': now}).exec();
+  const thread = await threadsModel.findByIdAndUpdate(request.body.thread_id,
+    {'bumped_on': now}).exec();
 
   if (thread === null) {
     return response
@@ -85,53 +74,87 @@ exports.postNewReply = async function(request, response) {
     .redirect(`/b/${request.params.board}/${request.body.thread_id}`);
 };
 
-// I can GET an entire thread with all it's replies from /api/replies/{board}?thread_id={thread_id}. Also hiding the same fields as in POST.
+// GET /api/replies/:board request
+//
+// {
+//   'thread_id': MongoId
+// }
+//
+// GET /api/replies/:board response
+//
+// {
+//   '_id': MongoId,
+//   'created_on': Date,
+//   'text': string,
+//   'replies': [
+//     {
+//       '_id': MongoId,
+//       'created_on': Date,
+//       'text': string
+//     }
+//   ]
+// }
 
 exports.getAllReplies = async function(request, response) {
-  let replies;
+  let replyModel;
+  let threadModel;
 
   if (await boardController.validateBoard(request.params.board)) {
-    replies = Replies(request.params.board);
+    replyModel = Replies(request.params.board);
+    threadModel = Threads(request.params.board);
   } else {
     // Re-render form with invalid board error.
     return response.redirect('/');
   }
 
-  const replyDocs = await replies
-        .find({'thread_id': request.query.thread_id})
-        .exec();
-
-  const returnReplies = replyDocs.map((doc) => {
-    return {
-      _id: doc._id,
-      text: doc.text,
-      thread_id: doc.thread_id,
-      created_on: doc.created_on,
-      reported: doc.reported
-    };
-  });
+  const thread = await threadModel
+    .findById(request.query.thread_id)
+    .exec();
+  const replies = await replyModel
+    .find({'thread_id': request.query.thread_id})
+    .exec();
 
   return response
     .status(200)
-    .send(returnReplies);
+    .json({
+      '_id': thread._id,
+      'created_on': thread.created_on,
+      'text': thread.text,
+      'replies': replies.map((item) => {
+        return {
+          '_id': item._id,
+          'created_on': item.created_on,
+          'text': item.text
+        };
+      })
+    });
 };
 
-// I can report a reply and change it's reported value to true by sending a PUT request to /api/replies/{board} and pass along the thread_id & reply_id. (Text response will be 'success')
+// PUT /api/replies/:board request
+//
+// {
+//   'thread_id': MongoId,
+//   'reply_id': MongoId
+// }
+//
+// PUT /api/replies/:board response
+//
+// 'success', 'failure', or redirect /
 
 exports.putReportReply = async function(request, response) {
-  let replies;
+  let replyModel;
 
   if (await boardController.validateBoard(request.params.board)) {
-    replies = Replies(request.params.board);
+    replyModel = Replies(request.params.board);
   } else {
     // Re-render form with invalid board error.
     return response.redirect('/');
   }
 
-  const reply = await replies.findOneAndUpdate({
+  const reply = await replyModel.findOneAndUpdate({
     '_id': request.body.reply_id,
     'thread_id': request.body.thread_id
-  }, {'reported': false}).exec();
+  }, {'reported': true}).exec();
 
   if (reply) {
     return response
@@ -146,26 +169,38 @@ exports.putReportReply = async function(request, response) {
 
 // I can delete a post(just changing the text to '[deleted]') if I send a DELETE request to /api/replies/{board} and pass along the thread_id, reply_id, & delete_password. (Text response will be 'incorrect password' or 'success')
 
+// DELETE /api/replies/:board request
+//
+// {
+//   'thread_id': MongoId,
+//   'reply_id': MongoId,
+//   'delete_password': string
+// }
+//
+// DELETE /api/replies/:board response
+//
+// 'success', 'failure', 'incorrect password', or redirect /
+
 exports.deleteReply = async function(request, response) {
-  let replies;
+  let replyModel;
 
   if (await boardController.validateBoard(request.params.board)) {
-    replies = Replies(request.params.board);
+    replyModel = Replies(request.params.board);
   } else {
     // Re-render form with invalid board error.
     return response.redirect('/');
   }
 
-  let reply = await replies.findOne({
+  let reply = await replyModel.findOne({
     '_id': request.body.reply_id,
     'thread_id': request.body.thread_id
   }).exec();
 
   if (reply.delete_password === request.body.delete_password) {
-     reply = await replies.findOneAndUpdate({
-       '_id': request.body.reply_id,
-       'thread_id': request.body.thread_id
-     }, {'text': '[deleted]'}).exec();
+    reply = await replyModel.findOneAndUpdate({
+      '_id': request.body.reply_id,
+      'thread_id': request.body.thread_id
+    }, {'text': '[deleted]'}).exec();
 
 
     if (reply) {
@@ -174,7 +209,7 @@ exports.deleteReply = async function(request, response) {
         .send('success');
     } else {
       return response
-        .status(400)
+        .status(500)
         .send('failure');
     }
   } else {

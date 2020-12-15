@@ -33,6 +33,7 @@ router
   .put('/:board',
     validateBoard,
     validateThreadId,
+    validationErrorReporterJSON,
     threadController.putReportThread);
 
 router
