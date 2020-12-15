@@ -6,8 +6,10 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const express = require('express');
-const helmet = require('helmet');
 const mongoose = require('mongoose');
+
+// Middleware.
+const helmet = require('./middleware/helmet.js');
 
 // Routing.
 const threadRoutes = require('./routes/threads.js');
@@ -32,20 +34,7 @@ async function start() {
     await mongoose.connect(process.env.MONGO_URI, MONGOOSE_OPTIONS);
 
     // Helmet middleware.
-    app.use(helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ['\'self\''],
-          scriptSrc: ['\'self\'', 'localhost', '*.jquery.com', '\'unsafe-inline\''],
-          scriptSrcElem: ['\'self\'', 'localhost', '*.jquery.com', '\'unsafe-inline\''],
-          styleSrc: ['\'self\'', 'localhost', '\'unsafe-inline\'']
-        }},
-      referrerPolicy: {
-        policy: 'same-origin'
-      },
-      frameguard: {
-        action: 'sameorigin'
-      }}));
+    app.use(helmet.config);
     
     // FCC testing.
     app.use(cors({origin: '*'}));
