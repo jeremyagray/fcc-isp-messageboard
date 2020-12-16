@@ -2,7 +2,7 @@
   "name": "fcc-isp-messageboard",
   "homepage": "http://www.grayfarms.org/",
   "author": "Jeremy A Gray <jeremy.a.gray@gmail.com> (http://www.grayfarms.org/)",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "FCC ISP Anonymous Message Board Project",
   "main": "server.js",
   "scripts": {

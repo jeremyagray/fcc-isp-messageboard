@@ -87,7 +87,7 @@ async function start() {
     // Run server and/or tests.
     const port = process.env.PORT || 3000;
     const name = 'fcc-isp-messageboard';
-    const version = '0.0.1';
+    const version = '0.2.0';
 
     app.listen(port, function () {
       console.log(`${name}@${version} listening on port ${port}...`);
