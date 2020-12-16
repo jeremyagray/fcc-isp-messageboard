@@ -39,6 +39,7 @@ router
 
 router
   .delete('/:board',
+    validatePassword,
     validateReplyId,
     validateThreadId,
     validationErrorReporterJSON,

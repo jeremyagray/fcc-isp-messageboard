@@ -18,7 +18,7 @@ const testingBoardRegExp = /\/b\/testing\/$/;
 const testingThreadEndpoint = '/api/threads/testing';
 const invalidThreadEndpoint = '/api/threads/~!!@';
 const nonexistentThreadEndpoint = '/api/threads/notreal';
-// const testingReplyEndpoint = '/api/replies/testing';
+const testingReplyEndpoint = '/api/replies/testing';
 // const invalidReplyEndpoint = '/api/replies/~!!@';
 // const nonexistentReplyEndpoint = '/api/replies/notreal';
 
@@ -1005,8 +1005,8 @@ suite('Functional Tests', function() {
 
             try {
               let response = await chai.request(server)
-                .put(testingThreadEndpoint)
-                .send({});
+                  .put(testingThreadEndpoint)
+                  .send({});
 
               assert.equal(response.status, 400);
               assert.match(response.get('content-type'),
@@ -1060,10 +1060,10 @@ suite('Functional Tests', function() {
 
             try {
               let response = await chai.request(server)
-                .put('/api/threads')
-                .send({
-                  'thread_id': putThread._id
-                });
+                  .put('/api/threads')
+                  .send({
+                    'thread_id': putThread._id
+                  });
 
               assert.equal(response.status, 404);
               assert.match(response.get('content-type'),
@@ -1136,17 +1136,373 @@ suite('Functional Tests', function() {
     });
   });
 
-  suite('Routing for /api/replies/:board', function() {
+  // POST /api/replies/:board request
+  //
+  // {
+  //   'text': string,
+  //   'delete_password': string,
+  //   'thread_id': MongoId
+  // }
+  //
+  // POST /api/replies/:board response
+  //
+  // redirect /b/:board/:thread_id
+
+  suite('/api/replies/:board', function() {
     suite('POST', function() {
+      suite('valid POST requests', function() {
+      });
+
+      suite('invalid POST requests', function() {
+        suite('field validation tests', function() {
+        });
+
+        suite('malformed requests', function() {
+        });
+      });
     });
 
-    suite('GET', function() {
+    // GET /api/replies/:board request
+    //
+    // {
+    //   'thread_id': MongoId
+    // }
+    //
+    // GET /api/replies/:board response
+    //
+    // {
+    //   '_id': MongoId,
+    //   'created_on': Date,
+    //   'text': string,
+    //   'replies': [
+    //     {
+    //       '_id': MongoId,
+    //       'created_on': Date,
+    //       'text': string
+    //     }
+    //   ]
+    // }
+
+    suite('GET /api/replies/:board', function() {
+      suite('valid GET requests', function() {
+      });
+
+      suite('invalid GET requests', function() {
+        suite('field validation tests', function() {
+        });
+
+        suite('malformed requests', function() {
+        });
+      });
     });
 
-    suite('PUT', function() {
+    // PUT /api/replies/:board request
+    //
+    // {
+    //   'thread_id': MongoId,
+    //   'reply_id': MongoId
+    // }
+    //
+    // PUT /api/replies/:board response
+    //
+    // 'success', 'failure', or redirect /
+
+    suite('PUT /api/replies/:board', function() {
+      suite('valid PUT requests', function() {
+      });
+
+      suite('invalid PUT requests', function() {
+        suite('field validation tests', function() {
+        });
+
+        suite('malformed requests', function() {
+        });
+      });
     });
 
-    suite('DELETE', function() {
+    // DELETE /api/replies/:board request
+    //
+    // {
+    //   'thread_id': MongoId,
+    //   'reply_id': MongoId,
+    //   'delete_password': string
+    // }
+    //
+    // DELETE /api/replies/:board response
+    //
+    // 'success', 'failure', 'incorrect password', or redirect /
+
+    suite('DELETE /api/replies/:board', function() {
+      suite('valid DELETE requests', function() {
+        test('all fields valid', async function() {
+          const successMessage = 'success';
+
+          try {
+            // Create a thread.
+            let threadModel = await Threads(testingBoardName);
+            const threadInfo = {
+              'text': 'This is a test thread.',
+              'delete_password': 'password'
+            };
+
+            const thread = await threadModel.create(threadInfo);
+
+            // Create a reply.
+            let replyModel = await Replies(testingBoardName);
+            const replyInfo = {
+              'text': 'This is a test reply.',
+              'thread_id': thread._id,
+              'delete_password': 'password'
+            };
+
+            const reply = await replyModel.create(replyInfo);
+
+            let response = await chai.request(server)
+              .delete(testingReplyEndpoint)
+              .send({
+                'thread_id': thread._id,
+                'reply_id': reply._id,
+                'delete_password': reply.delete_password
+              });
+
+            assert.equal(response.status, 200);
+            assert.match(response.get('content-type'), /text\/html/, 'Content type should be text/html.');
+            assert.equal(response.text, successMessage, 'Success messages should be equal.');
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
+      });
+
+      suite('invalid DELETE requests', function() {
+        suite('validation tests', function() {
+          test('invalid thread ids', async function() {
+            const errorMessage = 'invalid request';
+            const invalidThreads = [
+              null,
+              undefined,
+              {},
+              [],
+              314,
+              3.14,
+              '012345',
+              '012345012345012345012345012345',
+              'zzzzzzzzzzzzzzzzzzzzzzzz',
+              'bob-is-your-uncle',
+              ''
+            ];
+
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              // Create a reply.
+              let replyModel = await Replies(testingBoardName);
+              const replyInfo = {
+                'text': 'This is a test reply.',
+                'thread_id': thread._id,
+                'delete_password': 'password'
+              };
+
+              const reply = await replyModel.create(replyInfo);
+
+              for (let i = 0; i < invalidThreads.length; i++) {
+                let response = await chai.request(server)
+                    .delete(testingReplyEndpoint)
+                    .send({
+                      'thread_id': invalidThreads[i],
+                      'reply_id': reply._id,
+                      'delete_password': reply.delete_password
+                    });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+
+          test('invalid reply ids', async function() {
+            const errorMessage = 'invalid request';
+            const invalidReplies = [
+              null,
+              undefined,
+              {},
+              [],
+              314,
+              3.14,
+              '012345',
+              '012345012345012345012345012345',
+              'zzzzzzzzzzzzzzzzzzzzzzzz',
+              'bob-is-your-uncle',
+              ''
+            ];
+
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              // Create a reply.
+              let replyModel = await Replies(testingBoardName);
+              const replyInfo = {
+                'text': 'This is a test reply.',
+                'thread_id': thread._id,
+                'delete_password': 'password'
+              };
+
+              const reply = await replyModel.create(replyInfo);
+
+              for (let i = 0; i < invalidReplies.length; i++) {
+                let response = await chai.request(server)
+                    .delete(testingReplyEndpoint)
+                    .send({
+                      'thread_id': thread._id,
+                      'reply_id': invalidReplies[i],
+                      'delete_password': reply.delete_password
+                    });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+
+          test('invalid passwords', async function() {
+            const errorMessage = 'invalid request';
+            const invalidPasswords = [
+              null,
+              undefined,
+              [],
+              ''
+            ];
+
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              // Create a reply.
+              let replyModel = await Replies(testingBoardName);
+              const replyInfo = {
+                'text': 'This is a test reply.',
+                'thread_id': thread._id,
+                'delete_password': 'password'
+              };
+
+              const reply = await replyModel.create(replyInfo);
+
+              for (let i = 0; i < invalidPasswords.length; i++) {
+                let response = await chai.request(server)
+                    .delete(testingReplyEndpoint)
+                    .send({
+                      'thread_id': thread._id,
+                      'reply_id': reply._id,
+                      'delete_password': invalidPasswords[i]
+                    });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+        });
+
+        suite('incorrect passwords', function() {
+          test('incorrect passwords', async function() {
+            const errorMessage = 'incorrect password';
+            const incorrectPasswords = [
+              'barley',
+              'catnip',
+              'orThogoNal',
+              'Gannymead',
+              'WhiskersTheCat'
+            ];
+
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              // Create a reply.
+              let replyModel = await Replies(testingBoardName);
+              const replyInfo = {
+                'text': 'This is a test reply.',
+                'thread_id': thread._id,
+                'delete_password': 'password'
+              };
+
+              const reply = await replyModel.create(replyInfo);
+
+              for (let i = 0; i < incorrectPasswords.length; i++) {
+                let response = await chai.request(server)
+                    .delete(testingReplyEndpoint)
+                    .send({
+                      'thread_id': thread._id,
+                      'reply_id': reply._id,
+                      'delete_password': incorrectPasswords[i]
+                    });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /text\/html/,
+                             'Content type should be text/html.');
+                assert.equal(response.text,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+        });
+      });
     });
   });
 });

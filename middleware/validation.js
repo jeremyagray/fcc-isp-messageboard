@@ -2,18 +2,6 @@
 
 const {check, validationResult} = require('express-validator');
 
-// Validation functions; reuse for differently named fields of same type.
-// function checkDates(field) {
-//   return check(field)
-//     .optional({'nullable': true, 'checkFalsy': true})
-//     .escape()
-//     .stripLow(true)
-//     .trim()
-//     .isDate('YYYY-MM-DD')
-//     .toDate()
-//     .withMessage('Optional date in YYYY-MM-DD format.');
-// }
-
 function checkIds(field) {
   return check(field)
     .notEmpty()
@@ -109,7 +97,7 @@ exports.validateText = [
 
 exports.validatePassword = [
   checkText('delete_password',
-    'Delete password should be an alphanumeric string.')
+    'Delete password should be a non-empty string.')
 ];
 
 // exports.validateUsername = [
