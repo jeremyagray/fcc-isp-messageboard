@@ -1151,10 +1151,191 @@ suite('Functional Tests', function() {
   suite('/api/replies/:board', function() {
     suite('POST', function() {
       suite('valid POST requests', function() {
+        test('all fields valid', async function() {
+          try {
+            // Create a thread.
+            let threadModel = await Threads(testingBoardName);
+            const threadInfo = {
+              'text': 'This is a test thread.',
+              'delete_password': 'password'
+            };
+
+            const thread = await threadModel.create(threadInfo);
+
+            // POST a reply.
+            let now = new Date();
+            let response = await chai.request(server)
+              .post(testingReplyEndpoint)
+              .send({
+                'text': `This is a test reply (${now.getTime()}).`,
+                'delete_password': 'password',
+                'thread_id': thread._id
+              });
+
+            // Find the reply.
+            let replyModel = await Replies(testingBoardName);
+            const reply = await replyModel.findOne({
+              'text': `This is a test reply (${now.getTime()}).`
+            }).exec();
+
+            // Check the response.
+            assert.equal(response.status, 200);
+            assert.property(response, 'redirects');
+            assert.include(response.redirects[0],
+                         `\/b\/testing\/${thread._id}`,
+                         'Reply actions should redirect to the thread.');
+
+            // Check the reply.
+            assert.equal(thread._id.toString(),
+                         reply.thread_id.toString(),
+                         'Thread IDs should be equal.');
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
       });
 
       suite('invalid POST requests', function() {
         suite('field validation tests', function() {
+          test('invalid thread ids', async function() {
+            const errorMessage = 'invalid request';
+            const invalidThreads = [
+              null,
+              undefined,
+              {},
+              [],
+              314,
+              3.14,
+              '012345',
+              '012345012345012345012345012345',
+              'zzzzzzzzzzzzzzzzzzzzzzzz',
+              'bob-is-your-uncle',
+              ''
+            ];
+
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              for (let i = 0; i < invalidThreads.length; i++) {
+                // POST a reply.
+                let now = new Date();
+                let response = await chai.request(server)
+                    .post(testingReplyEndpoint)
+                    .send({
+                      'text': `This is a test reply (${now.getTime()}).`,
+                      'delete_password': 'password',
+                      'thread_id': invalidThreads[i]
+                    });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+
+          test('invalid passwords', async function() {
+            const errorMessage = 'invalid request';
+            const invalidPasswords = [
+              null,
+              undefined,
+              [],
+              ''
+            ];
+
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              for (let i = 0; i < invalidPasswords.length; i++) {
+                // POST a reply.
+                let now = new Date();
+                let response = await chai.request(server)
+                    .post(testingReplyEndpoint)
+                    .send({
+                      'text': `This is a test reply (${now.getTime()}).`,
+                      'delete_password': invalidPasswords[i],
+                      'thread_id': thread._id
+                    });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+
+          test('invalid reply text', async function() {
+            const errorMessage = 'invalid request';
+            const invalidTexts = [
+              null,
+              undefined,
+              [],
+              ''
+            ];
+
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              for (let i = 0; i < invalidTexts.length; i++) {
+                // POST a reply.
+                let now = new Date();
+                let response = await chai.request(server)
+                    .post(testingReplyEndpoint)
+                    .send({
+                      'text': invalidTexts[i],
+                      'delete_password': 'password',
+                      'thread_id': thread._id
+                    });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
         });
 
         suite('malformed requests', function() {
