@@ -4,7 +4,7 @@ const assert = chai.assert;
 
 const server = require('../server.js');
 
-// Import models for database mocking.
+// Models.
 const Boards = require('../models/boards.js');
 const Replies = require('../models/replies.js');
 const Threads = require('../models/threads.js');
@@ -292,74 +292,128 @@ suite('Functional Tests', function() {
       }
     });
 
-    suite('GET', function() {
-      test('Good GET:  valid board', async function() {
-        let response;
+    suite('GET /api/threads/:board', function() {
+      suite('Valid GET requests', async function() {
+        test('valid board', async function() {
+          try {
+            // Construct the response from the DB.
+            const threads = await Threads(testingBoardName).find({}).sort({bumped_on: 'desc'}).limit(10).exec();
 
-        try {
-          // Get the correct threads from the DB.
-          const threads = await Threads(testingBoardName).find({}).sort({bumped_on: 'desc'}).limit(10).exec();
-          const dbThreads = threads.map(function(item) {
-            return item._id.toString();
-          });
+            let dbResponse = [];
+            for (let i = 0; i < threads.length; i++) {
+              let thread = {};
 
-          response = await chai.request(server)
-            .get(testingThreadEndpoint);
+              let replies = await replyController
+                  .getReplies(testingBoardName, threads[i]._id);
 
-          // Gather the threads from the response.
-          let gotThreads = [];
-          for (let i = 0; i < response.body.threads.length; i++) {
-            gotThreads.push(response.body.threads[i]._id);
+              thread = {
+                '_id': threads[i]._id,
+                'created_on': threads[i].created_on,
+                'text': threads[i].text,
+                'replycount': replies.length,
+                'replies': replies.reverse().slice(0, 3).map((item) => {
+                  return {
+                    '_id': item._id,
+                    'created_on': item.created_on,
+                    'text': item.text
+                  };
+                })
+              };
+
+              dbResponse.push(thread);
+            }
+
+            const response = await chai.request(server)
+                  .get(testingThreadEndpoint);
+
+            assert.equal(response.status, 200);
+            assert.match(response.get('content-type'),
+                         /application\/json/,
+                         'Content type should be application/json.');
+            assert.equal(dbResponse.length,
+                         response.body.length,
+                         'Number of threads should equal.');
+
+            // Loop over the threads and replies to check for equality.
+            for (let i = 0; i < dbResponse.length; i++) {
+              assert.equal(dbResponse[i]._id,
+                           response.body[i]._id,
+                           'Thread ids should equal.');
+
+              let dbThreadDate = new Date(dbResponse[i].created_on);
+              let getThreadDate = new Date(response.body[i].created_on);
+
+              assert.equal(dbThreadDate.getTime(),
+                           getThreadDate.getTime(),
+                           'Dates should equal.');
+
+              assert.equal(dbResponse[i].text,
+                           response.body[i].text,
+                           'Thread texts should equal.');
+
+              assert.equal(dbResponse[i].replycount,
+                           response.body[i].replycount,
+                           'Thread replycounts should equal.');
+
+              assert.equal(dbResponse[i].replies.length,
+                           response.body[i].replies.length,
+                           'Number of replies should equal.');
+
+              for (let j = 0; j < dbResponse[i].replies.length; j++) {
+                assert.equal(dbResponse[i].replies[j]._id,
+                             response.body[i].replies[j]._id,
+                             'Reply ids should equal.');
+
+                let dbReplyDate = new Date(dbResponse[i].replies[j].created_on);
+                let getReplyDate = new Date(response.body[i].replies[j].created_on);
+                assert.equal(dbReplyDate.getTime(),
+                             getReplyDate.getTime(),
+                             'Dates should equal.');
+
+                assert.equal(dbResponse[i].replies[j].text,
+                             response.body[i].replies[j].text,
+                             'Repliy texts should equal.');
+              }
+            }
+          } catch (error) {
+            console.log(error);
+            throw error;
           }
-          
-          assert.equal(response.status, 200);
-          assert.isObject(response.body);
-          assert.deepEqual(dbThreads, gotThreads, 'The thread list from the database and response should match.');
-
-          // Check the replies on each thread.
-          for (let i = 0; i < dbThreads.length; i++) {
-            let dbReplies = await replyController.getReplies(testingBoardName, dbThreads[i], 3);
-            dbReplies = dbReplies.map(function(item) {
-              return item.toString();
-            });
-            assert.deepEqual(dbReplies, response.body.threads[i].replies, 'The reply list from the database and response should match.');
-          }
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
+        });
       });
 
-      test('Bad GET:  non-existent board', async function() {
-        let response;
+      suite('Invalid GET requests', async function() {
+        test('non-existent board', async function() {
+          let response;
 
-        try {
-          response = await chai.request(server)
-            .get('/api/threads/notreal');
+          try {
+            response = await chai.request(server)
+              .get('/api/threads/notreal');
 
-          assert.equal(response.status, 400);
-          assert.isObject(response.body);
-          assert.equal(response.body.error, 'invalid board', 'Error messages should match.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
+            assert.equal(response.status, 400);
+            assert.isObject(response.body);
+            assert.equal(response.body.error, 'invalid board', 'Error messages should match.');
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
 
-      test('Bad GET:  invalid board name', async function() {
-        let response;
+        test('invalid board name', async function() {
+          let response;
 
-        try {
-          response = await chai.request(server)
-            .get(invalidThreadEndpoint);
+          try {
+            response = await chai.request(server)
+              .get(invalidThreadEndpoint);
 
-          assert.equal(response.status, 400);
-          assert.isObject(response.body);
-          assert.equal(response.body.error, 'invalid request', 'Error messages should match.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
+            assert.equal(response.status, 400);
+            assert.isObject(response.body);
+            assert.equal(response.body.error, 'invalid request', 'Error messages should match.');
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
       });
     });
 
@@ -381,7 +435,7 @@ suite('Functional Tests', function() {
           response = await chai.request(server)
             .delete(testingThreadEndpoint)
             .send({
-              '_id': deleteThread._id,
+              'thread_id': deleteThread._id,
               'delete_password': deleteThread.delete_password
             });
 
@@ -411,7 +465,7 @@ suite('Functional Tests', function() {
           response = await chai.request(server)
             .delete(testingThreadEndpoint)
             .send({
-              '_id': deleteThread._id,
+              'thread_id': deleteThread._id,
               'delete_password': deleteThread.delete_password,
               'bob': 'is your uncle'
             });
@@ -502,7 +556,7 @@ suite('Functional Tests', function() {
           response = await chai.request(server)
             .delete(testingThreadEndpoint)
             .send({
-              '_id': deleteThread._id,
+              'thread_id': deleteThread._id,
               'delete_password': 'bad'
             });
 
@@ -772,291 +826,312 @@ suite('Functional Tests', function() {
       });
     });
 
-    suite('PUT /api/threads/:board routes', function() {
-      test('Good PUT:  valid board; valid, previously reported thread', async function() {
-        const successMessage = 'success';
+    suite('PUT /api/threads/:board', function() {
+      suite('Valid PUT requests', function() {
+        test('previously reported thread', async function() {
+          const successMessage = 'success';
 
-        // Create a thread.
-        let thread = await Threads(testingBoardName);
-        const putThreadInfo = {
-          'text': 'This is a test thread.',
-          'delete_password': 'password',
-          'reported': true
-        };
+          // Create a thread.
+          let thread = await Threads(testingBoardName);
+          const putThreadInfo = {
+            'text': 'This is a test thread.',
+            'delete_password': 'password',
+            'reported': true
+          };
 
-        const putThread = await thread.create(putThreadInfo);
+          const putThread = await thread.create(putThreadInfo);
 
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': putThread._id
-            });
+          try {
+            let response = await chai.request(server)
+                .put(testingThreadEndpoint)
+                .send({
+                  'thread_id': putThread._id
+                });
 
-          assert.equal(response.status, 200);
-          assert.match(response.get('content-type'), /text\/html/, 'Content type should be text/html.');
-          assert.equal(response.text, successMessage, 'Success messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
+            assert.equal(response.status, 200);
+            assert.match(response.get('content-type'),
+                         /text\/html/,
+                         'Content type should be text/html.');
+            assert.equal(response.text,
+                         successMessage,
+                         'Success messages should be equal.');
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
+
+        test('previously unreported thread', async function() {
+          const successMessage = 'success';
+
+          // Create a thread.
+          let thread = await Threads(testingBoardName);
+          const putThreadInfo = {
+            'text': 'This is a test thread.',
+            'delete_password': 'password'
+          };
+
+          const putThread = await thread.create(putThreadInfo);
+
+          try {
+            let response;
+            response = await chai.request(server)
+              .put(testingThreadEndpoint)
+              .send({
+                'thread_id': putThread._id
+              });
+
+            assert.equal(response.status, 200);
+            assert.match(response.get('content-type'),
+                         /text\/html/,
+                         'Content type should be text/html.');
+            assert.equal(response.text,
+                         successMessage,
+                         'Success messages should be equal.');
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
+
+        test('extra fields', async function() {
+          const successMessage = 'success';
+
+          // Create a thread.
+          let thread = await Threads(testingBoardName);
+          const putThreadInfo = {
+            'text': 'This is a test thread.',
+            'delete_password': 'password'
+          };
+
+          const putThread = await thread.create(putThreadInfo);
+
+          try {
+            let response;
+            response = await chai.request(server)
+              .put(testingThreadEndpoint)
+              .send({
+                'thread_id': putThread._id,
+                'bob': 'is your uncle'
+              });
+
+            assert.equal(response.status, 200);
+            assert.match(response.get('content-type'),
+                         /text\/html/,
+                         'Content type should be text/html.');
+            assert.equal(response.text,
+                         successMessage,
+                         'Success messages should be equal.');
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
       });
 
-      test('Good PUT:  valid board; valid, previously unreported thread', async function() {
-        const successMessage = 'success';
+      suite('Invalid PUT requests', function() {
+        suite('validation tests', function() {
+          test('valid board, invalid thread ids', async function() {
+            const errorMessage = 'invalid request';
+            const invalidThreads = [
+              null,
+              undefined,
+              {},
+              [],
+              314,
+              3.14,
+              '012345',
+              '012345012345012345012345012345',
+              'zzzzzzzzzzzzzzzzzzzzzzzz',
+              'bob-is-your-uncle',
+              ''
+            ];
 
-        // Create a thread.
-        let thread = await Threads(testingBoardName);
-        const putThreadInfo = {
-          'text': 'This is a test thread.',
-          'delete_password': 'password'
-        };
+            try {
+              for (let i = 0; i < invalidThreads.length; i++) {
+                let response = await chai.request(server)
+                    .put(testingThreadEndpoint)
+                    .send({
+                      'thread_id': invalidThreads[i]
+                    });
 
-        const putThread = await thread.create(putThreadInfo);
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
 
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': putThread._id
-            });
+          test('invalid boards, valid thread id', async function() {
+            const errorMessage = 'invalid request';
+            const invalidBoards = [
+              3.14,
+              'bob-is-your-uncle',
+              '##hackme',
+              '~!@#@#'
+            ];
 
-          assert.equal(response.status, 200);
-          assert.match(response.get('content-type'), /text\/html/, 'Content type should be text/html.');
-          assert.equal(response.text, successMessage, 'Success messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
+            try {
+              for (let i = 0; i < invalidBoards.length; i++) {
+                let response = await chai.request(server)
+                    .put(testingThreadEndpoint)
+                    .send({
+                      'thread_id': invalidBoards[i]
+                    });
 
-      test('Good PUT:  valid board; valid thread; extra fields', async function() {
-        const successMessage = 'success';
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                             /application\/json/,
+                             'Content type should be application/json.');
+                assert.equal(response.body.error,
+                             errorMessage,
+                             'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
 
-        // Create a thread.
-        let thread = await Threads(testingBoardName);
-        const putThreadInfo = {
-          'text': 'This is a test thread.',
-          'delete_password': 'password'
-        };
+          test('valid board, missing thread', async function() {
+            const errorMessage = 'invalid request';
 
-        const putThread = await thread.create(putThreadInfo);
+            try {
+              let response = await chai.request(server)
+                .put(testingThreadEndpoint)
+                .send({});
 
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': putThread._id,
-              'bob': 'is your uncle'
-            });
+              assert.equal(response.status, 400);
+              assert.match(response.get('content-type'),
+                           /application\/json/,
+                           'Content type should be application/json.');
+              assert.equal(response.body.error,
+                           errorMessage,
+                           'Error messages should be equal.');
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
 
-          assert.equal(response.status, 200);
-          assert.match(response.get('content-type'), /text\/html/, 'Content type should be text/html.');
-          assert.equal(response.text, successMessage, 'Success messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
+          test('valid board, invalid fields', async function() {
+            const errorMessage = 'invalid request';
 
-      test('Bad PUT:  non-existent board', async function() {
-        const errorMessage = 'could not report thread';
+            try {
+              let response;
+              response = await chai.request(server)
+                .put(testingThreadEndpoint)
+                .send({
+                  'bob': 'is your uncle',
+                  'alice': 'is your aunt'
+                });
 
-        // Create a thread.
-        let thread = await Threads(testingBoardName);
-        const putThreadInfo = {
-          'text': 'This is a test thread.',
-          'delete_password': 'password'
-        };
+              assert.equal(response.status, 400);
+              assert.match(response.get('content-type'),
+                           /application\/json/,
+                           'Content type should be application/json.');
+              assert.equal(response.body.error,
+                           errorMessage,
+                           'Error messages should be equal.');
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+        });
 
-        const putThread = await thread.create(putThreadInfo);
+        suite('malformed requests', function() {
+          test('missing board name, valid thread', async function() {
+            // Create a thread.
+            let thread = await Threads(testingBoardName);
+            const putThreadInfo = {
+              'text': 'This is a test thread.',
+              'delete_password': 'password'
+            };
 
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(nonexistentThreadEndpoint)
-            .send({
-              'thread_id': putThread._id
-            });
+            const putThread = await thread.create(putThreadInfo);
 
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
+            try {
+              let response = await chai.request(server)
+                .put('/api/threads')
+                .send({
+                  'thread_id': putThread._id
+                });
 
-      test('Bad PUT:  invalid board name', async function() {
-        const errorMessage = 'could not report thread';
+              assert.equal(response.status, 404);
+              assert.match(response.get('content-type'),
+                           /text\/html/,
+                           'Content type should be text/html.');
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
 
-        // Create a thread.
-        let thread = await Threads(testingBoardName);
-        const putThreadInfo = {
-          'text': 'This is a test thread.',
-          'delete_password': 'password'
-        };
+          test('non-existent board, valid thread', async function() {
+            const errorMessage = 'could not report thread';
 
-        const putThread = await thread.create(putThreadInfo);
+            // Create a thread.
+            let thread = await Threads(testingBoardName);
+            const putThreadInfo = {
+              'text': 'This is a test thread.',
+              'delete_password': 'password'
+            };
 
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(invalidThreadEndpoint)
-            .send({
-              'thread_id': putThread._id
-            });
+            const putThread = await thread.create(putThreadInfo);
 
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
+            try {
+              let response;
+              response = await chai.request(server)
+                .put('/api/threads/notreal')
+                .send({
+                  'thread_id': putThread._id
+                });
 
-      test('Bad PUT:  valid board, non-existent thread', async function() {
-        const errorMessage = 'could not report thread';
+              assert.equal(response.status, 400);
+              assert.match(response.get('content-type'),
+                           /application\/json/,
+                           'Content type should be application/json.');
+              assert.equal(response.body.error,
+                           errorMessage,
+                           'Error messages should be equal.');
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
 
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': '012345678901234567890123'
-            });
+          test('valid board, non-existent thread', async function() {
+            const errorMessage = 'could not report thread';
 
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
+            try {
+              let response;
+              response = await chai.request(server)
+                .put(testingThreadEndpoint)
+                .send({
+                  'thread_id': '012345678901234567890123'
+                });
 
-      test('Bad PUT:  valid board, empty thread', async function() {
-        const errorMessage = 'could not report thread';
-
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': ''
-            });
-
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
-
-      test('Bad PUT:  valid board, missing thread', async function() {
-        const errorMessage = 'could not report thread';
-
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({});
-
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
-
-      test('Bad PUT:  valid board, invalid thread (short)', async function() {
-        const errorMessage = 'could not report thread';
-
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': '01234567890123456789012'
-            });
-
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
-
-      test('Bad PUT:  valid board, invalid thread (long)', async function() {
-        const errorMessage = 'could not report thread';
-
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': '0123456789012345678901234'
-            });
-
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
-
-      test('Bad PUT:  valid board, invalid thread (non-hexadecimal)', async function() {
-        const errorMessage = 'could not report thread';
-
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'thread_id': '01234567890123456789012z'
-            });
-
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      });
-
-      test('Bad PUT:  valid board, invalid fields', async function() {
-        const errorMessage = 'could not report thread';
-
-        try {
-          let response;
-          response = await chai.request(server)
-            .put(testingThreadEndpoint)
-            .send({
-              'bob': 'is your uncle',
-              'alice': 'is your aunt'
-            });
-
-          assert.equal(response.status, 400);
-          assert.match(response.get('content-type'), /application\/json/, 'Content type should be application/json.');
-          assert.equal(response.body.error, errorMessage, 'Error messages should be equal.');
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
+              assert.equal(response.status, 400);
+              assert.match(response.get('content-type'),
+                           /application\/json/,
+                           'Content type should be application/json.');
+              assert.equal(response.body.error,
+                           errorMessage,
+                           'Error messages should be equal.');
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+        });
       });
     });
   });
