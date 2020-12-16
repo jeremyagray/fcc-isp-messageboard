@@ -1,4 +1,5 @@
 const chai = require('chai');
+const chaiDate = require('chai-datetime');
 const chaiHttp = require('chai-http');
 const assert = chai.assert;
 
@@ -22,6 +23,7 @@ const testingReplyEndpoint = '/api/replies/testing';
 // const invalidReplyEndpoint = '/api/replies/~!!@';
 // const nonexistentReplyEndpoint = '/api/replies/notreal';
 
+chai.use(chaiDate);
 chai.use(chaiHttp);
 
 suite('Functional Tests', function() {
@@ -304,7 +306,7 @@ suite('Functional Tests', function() {
               let thread = {};
 
               let replies = await replyController
-                  .getReplies(testingBoardName, threads[i]._id);
+                .getReplies(testingBoardName, threads[i]._id);
 
               thread = {
                 '_id': threads[i]._id,
@@ -324,55 +326,51 @@ suite('Functional Tests', function() {
             }
 
             const response = await chai.request(server)
-                  .get(testingThreadEndpoint);
+              .get(testingThreadEndpoint);
 
             assert.equal(response.status, 200);
             assert.match(response.get('content-type'),
-                         /application\/json/,
-                         'Content type should be application/json.');
+              /application\/json/,
+              'Content type should be application/json.');
             assert.equal(dbResponse.length,
-                         response.body.length,
-                         'Number of threads should equal.');
+              response.body.length,
+              'Number of threads should equal.');
 
             // Loop over the threads and replies to check for equality.
             for (let i = 0; i < dbResponse.length; i++) {
               assert.equal(dbResponse[i]._id,
-                           response.body[i]._id,
-                           'Thread ids should equal.');
+                response.body[i]._id,
+                'Thread ids should equal.');
 
-              let dbThreadDate = new Date(dbResponse[i].created_on);
-              let getThreadDate = new Date(response.body[i].created_on);
-
-              assert.equal(dbThreadDate.getTime(),
-                           getThreadDate.getTime(),
-                           'Dates should equal.');
+              assert.equalTime(new Date(dbResponse[i].created_on),
+                new Date(response.body[i].created_on),
+                'Thread dates should equal.');
 
               assert.equal(dbResponse[i].text,
-                           response.body[i].text,
-                           'Thread texts should equal.');
+                response.body[i].text,
+                'Thread texts should equal.');
 
               assert.equal(dbResponse[i].replycount,
-                           response.body[i].replycount,
-                           'Thread replycounts should equal.');
+                response.body[i].replycount,
+                'Thread replycounts should equal.');
 
               assert.equal(dbResponse[i].replies.length,
-                           response.body[i].replies.length,
-                           'Number of replies should equal.');
+                response.body[i].replies.length,
+                'Number of replies should equal.');
 
               for (let j = 0; j < dbResponse[i].replies.length; j++) {
                 assert.equal(dbResponse[i].replies[j]._id,
-                             response.body[i].replies[j]._id,
-                             'Reply ids should equal.');
+                  response.body[i].replies[j]._id,
+                  'Reply ids should equal.');
 
-                let dbReplyDate = new Date(dbResponse[i].replies[j].created_on);
-                let getReplyDate = new Date(response.body[i].replies[j].created_on);
-                assert.equal(dbReplyDate.getTime(),
-                             getReplyDate.getTime(),
-                             'Dates should equal.');
+                assert.equalTime(new Date(dbResponse[i].replies[j].created_on),
+                  new Date(response
+                    .body[i].replies[j].created_on),
+                  'Reply dates should equal.');
 
                 assert.equal(dbResponse[i].replies[j].text,
-                             response.body[i].replies[j].text,
-                             'Repliy texts should equal.');
+                  response.body[i].replies[j].text,
+                  'Reply texts should equal.');
               }
             }
           } catch (error) {
@@ -843,18 +841,18 @@ suite('Functional Tests', function() {
 
           try {
             let response = await chai.request(server)
-                .put(testingThreadEndpoint)
-                .send({
-                  'thread_id': putThread._id
-                });
+              .put(testingThreadEndpoint)
+              .send({
+                'thread_id': putThread._id
+              });
 
             assert.equal(response.status, 200);
             assert.match(response.get('content-type'),
-                         /text\/html/,
-                         'Content type should be text/html.');
+              /text\/html/,
+              'Content type should be text/html.');
             assert.equal(response.text,
-                         successMessage,
-                         'Success messages should be equal.');
+              successMessage,
+              'Success messages should be equal.');
           } catch (error) {
             console.log(error);
             throw error;
@@ -883,11 +881,11 @@ suite('Functional Tests', function() {
 
             assert.equal(response.status, 200);
             assert.match(response.get('content-type'),
-                         /text\/html/,
-                         'Content type should be text/html.');
+              /text\/html/,
+              'Content type should be text/html.');
             assert.equal(response.text,
-                         successMessage,
-                         'Success messages should be equal.');
+              successMessage,
+              'Success messages should be equal.');
           } catch (error) {
             console.log(error);
             throw error;
@@ -917,11 +915,11 @@ suite('Functional Tests', function() {
 
             assert.equal(response.status, 200);
             assert.match(response.get('content-type'),
-                         /text\/html/,
-                         'Content type should be text/html.');
+              /text\/html/,
+              'Content type should be text/html.');
             assert.equal(response.text,
-                         successMessage,
-                         'Success messages should be equal.');
+              successMessage,
+              'Success messages should be equal.');
           } catch (error) {
             console.log(error);
             throw error;
@@ -950,18 +948,18 @@ suite('Functional Tests', function() {
             try {
               for (let i = 0; i < invalidThreads.length; i++) {
                 let response = await chai.request(server)
-                    .put(testingThreadEndpoint)
-                    .send({
-                      'thread_id': invalidThreads[i]
-                    });
+                  .put(testingThreadEndpoint)
+                  .send({
+                    'thread_id': invalidThreads[i]
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -981,18 +979,18 @@ suite('Functional Tests', function() {
             try {
               for (let i = 0; i < invalidBoards.length; i++) {
                 let response = await chai.request(server)
-                    .put(testingThreadEndpoint)
-                    .send({
-                      'thread_id': invalidBoards[i]
-                    });
+                  .put(testingThreadEndpoint)
+                  .send({
+                    'thread_id': invalidBoards[i]
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1005,16 +1003,16 @@ suite('Functional Tests', function() {
 
             try {
               let response = await chai.request(server)
-                  .put(testingThreadEndpoint)
-                  .send({});
+                .put(testingThreadEndpoint)
+                .send({});
 
               assert.equal(response.status, 400);
               assert.match(response.get('content-type'),
-                           /application\/json/,
-                           'Content type should be application/json.');
+                /application\/json/,
+                'Content type should be application/json.');
               assert.equal(response.body.error,
-                           errorMessage,
-                           'Error messages should be equal.');
+                errorMessage,
+                'Error messages should be equal.');
             } catch (error) {
               console.log(error);
               throw error;
@@ -1035,11 +1033,11 @@ suite('Functional Tests', function() {
 
               assert.equal(response.status, 400);
               assert.match(response.get('content-type'),
-                           /application\/json/,
-                           'Content type should be application/json.');
+                /application\/json/,
+                'Content type should be application/json.');
               assert.equal(response.body.error,
-                           errorMessage,
-                           'Error messages should be equal.');
+                errorMessage,
+                'Error messages should be equal.');
             } catch (error) {
               console.log(error);
               throw error;
@@ -1060,15 +1058,15 @@ suite('Functional Tests', function() {
 
             try {
               let response = await chai.request(server)
-                  .put('/api/threads')
-                  .send({
-                    'thread_id': putThread._id
-                  });
+                .put('/api/threads')
+                .send({
+                  'thread_id': putThread._id
+                });
 
               assert.equal(response.status, 404);
               assert.match(response.get('content-type'),
-                           /text\/html/,
-                           'Content type should be text/html.');
+                /text\/html/,
+                'Content type should be text/html.');
             } catch (error) {
               console.log(error);
               throw error;
@@ -1097,11 +1095,11 @@ suite('Functional Tests', function() {
 
               assert.equal(response.status, 400);
               assert.match(response.get('content-type'),
-                           /application\/json/,
-                           'Content type should be application/json.');
+                /application\/json/,
+                'Content type should be application/json.');
               assert.equal(response.body.error,
-                           errorMessage,
-                           'Error messages should be equal.');
+                errorMessage,
+                'Error messages should be equal.');
             } catch (error) {
               console.log(error);
               throw error;
@@ -1121,11 +1119,11 @@ suite('Functional Tests', function() {
 
               assert.equal(response.status, 400);
               assert.match(response.get('content-type'),
-                           /application\/json/,
-                           'Content type should be application/json.');
+                /application\/json/,
+                'Content type should be application/json.');
               assert.equal(response.body.error,
-                           errorMessage,
-                           'Error messages should be equal.');
+                errorMessage,
+                'Error messages should be equal.');
             } catch (error) {
               console.log(error);
               throw error;
@@ -1182,13 +1180,13 @@ suite('Functional Tests', function() {
             assert.equal(response.status, 200);
             assert.property(response, 'redirects');
             assert.include(response.redirects[0],
-                         `\/b\/testing\/${thread._id}`,
-                         'Reply actions should redirect to the thread.');
+              `/b/testing/${thread._id}`,
+              'Reply actions should redirect to the thread.');
 
             // Check the reply.
             assert.equal(thread._id.toString(),
-                         reply.thread_id.toString(),
-                         'Thread IDs should be equal.');
+              reply.thread_id.toString(),
+              'Thread IDs should be equal.');
           } catch (error) {
             console.log(error);
             throw error;
@@ -1215,33 +1213,24 @@ suite('Functional Tests', function() {
             ];
 
             try {
-              // Create a thread.
-              let threadModel = await Threads(testingBoardName);
-              const threadInfo = {
-                'text': 'This is a test thread.',
-                'delete_password': 'password'
-              };
-
-              const thread = await threadModel.create(threadInfo);
-
               for (let i = 0; i < invalidThreads.length; i++) {
                 // POST a reply.
                 let now = new Date();
                 let response = await chai.request(server)
-                    .post(testingReplyEndpoint)
-                    .send({
-                      'text': `This is a test reply (${now.getTime()}).`,
-                      'delete_password': 'password',
-                      'thread_id': invalidThreads[i]
-                    });
+                  .post(testingReplyEndpoint)
+                  .send({
+                    'text': `This is a test reply (${now.getTime()}).`,
+                    'delete_password': 'password',
+                    'thread_id': invalidThreads[i]
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1272,20 +1261,20 @@ suite('Functional Tests', function() {
                 // POST a reply.
                 let now = new Date();
                 let response = await chai.request(server)
-                    .post(testingReplyEndpoint)
-                    .send({
-                      'text': `This is a test reply (${now.getTime()}).`,
-                      'delete_password': invalidPasswords[i],
-                      'thread_id': thread._id
-                    });
+                  .post(testingReplyEndpoint)
+                  .send({
+                    'text': `This is a test reply (${now.getTime()}).`,
+                    'delete_password': invalidPasswords[i],
+                    'thread_id': thread._id
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1314,22 +1303,21 @@ suite('Functional Tests', function() {
 
               for (let i = 0; i < invalidTexts.length; i++) {
                 // POST a reply.
-                let now = new Date();
                 let response = await chai.request(server)
-                    .post(testingReplyEndpoint)
-                    .send({
-                      'text': invalidTexts[i],
-                      'delete_password': 'password',
-                      'thread_id': thread._id
-                    });
+                  .post(testingReplyEndpoint)
+                  .send({
+                    'text': invalidTexts[i],
+                    'delete_password': 'password',
+                    'thread_id': thread._id
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1339,6 +1327,37 @@ suite('Functional Tests', function() {
         });
 
         suite('malformed requests', function() {
+          test('non-existent board', async function() {
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              // POST a reply.
+              let response = await chai.request(server)
+                .post('/api/replies/notreal')
+                .send({
+                  'text': 'This is a test reply.',
+                  'delete_password': 'password',
+                  'thread_id': thread._id
+                });
+
+              // Check the response.
+              assert.equal(response.status, 200);
+              assert.property(response, 'redirects');
+              assert.match(response.redirects[0],
+                /http:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{0,5}\//,
+                'Thread actions should redirect to the board.');
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
         });
       });
     });
@@ -1366,13 +1385,172 @@ suite('Functional Tests', function() {
 
     suite('GET /api/replies/:board', function() {
       suite('valid GET requests', function() {
+        test('all fields valid', async function() {
+          try {
+            // Create a thread.
+            let threadModel = await Threads(testingBoardName);
+            const threadInfo = {
+              'text': 'This is a test thread.',
+              'delete_password': 'password'
+            };
+
+            const thread = await threadModel.create(threadInfo);
+
+            // Create some replies.
+            const responses = Math.floor(Math.random() * 6) + 15;
+            let replyModel = await Replies(testingBoardName);
+
+            for (let i = 0; i < responses; i++) {
+              let replyInfo = {
+                'text': 'This is thread ' + thread._id + ' reply #' + i +'.',
+                'delete_password': 'password',
+                'thread_id': thread._id
+              };
+
+              await replyModel.create(replyInfo);
+            }
+            
+            const replies = await replyModel.find({
+              'thread_id': thread._id
+            }).exec();
+
+            // Construct the db version of the response.
+            const dbResponse = {
+              '_id': thread._id,
+              'created_on': thread.created_on,
+              'text': thread.text,
+              'replies': replies.map((item) => {
+                return {
+                  '_id': item._id,
+                  'created_on': item.created_on,
+                  'text': item.text,
+                };
+              })
+            };
+
+            // GET the thread and replies.
+            // console.log(`${testingReplyEndpoint}?thread_id=${thread._id}`);
+            let response = await chai.request(server)
+              .get(testingReplyEndpoint)
+              .query({
+                'thread_id': thread._id.toString()
+              });
+
+            // Check the response.
+            assert.equal(response.status, 200);
+            assert.match(response.get('content-type'),
+              /application\/json/,
+              'Content type should be application/json.');
+
+            assert.equal(response.body._id.toString(),
+              dbResponse._id.toString(),
+              'Thread IDs should match.');
+
+            assert.equalTime(new Date(response.body.created_on),
+              new Date(dbResponse.created_on),
+              'Thread dates should match.');
+
+            assert.equal(response.body.text,
+              dbResponse.text,
+              'Thread texts should match.');
+
+            assert.equal(response.body.replies.length,
+              dbResponse.replies.length,
+              'Reply counts should match.');
+
+            for (let i = 0; i < dbResponse.replies.length; i++) {
+              assert.equal(response.body.replies[i]._id.toString(),
+                dbResponse.replies[i]._id.toString(),
+                'Reply IDs should match.');
+
+              assert.equalTime(new Date(response.body.replies[i].created_on),
+                new Date(dbResponse.replies[i].created_on),
+                'Reply dates should match.');
+
+              assert.equal(response.body.replies[i].text,
+                dbResponse.replies[i].text,
+                'Reply texts should match.');
+            }
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
       });
 
       suite('invalid GET requests', function() {
         suite('field validation tests', function() {
+          test('invalid thread ids', async function() {
+            const errorMessage = 'invalid request';
+            const invalidThreads = [
+              null,
+              undefined,
+              {},
+              [],
+              314,
+              3.14,
+              '012345',
+              '012345012345012345012345012345',
+              'zzzzzzzzzzzzzzzzzzzzzzzz',
+              'bob-is-your-uncle',
+              ''
+            ];
+
+            try {
+              for (let i = 0; i < invalidThreads.length; i++) {
+                // GET the thread and replies.
+                let response = await chai.request(server)
+                  .get(testingReplyEndpoint)
+                  .query({
+                    'thread_id': invalidThreads[i]
+                  });
+
+                // Check the response.
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                  /application\/json/,
+                  'Content type should be application/json.');
+                assert.equal(response.body.error,
+                  errorMessage,
+                  'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
         });
 
         suite('malformed requests', function() {
+          test('non-existent board', async function() {
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              // GET the thread and replies.
+              let response = await chai.request(server)
+                .get('/api/replies/notreal')
+                .query({
+                  'thread_id': thread._id.toString()
+                });
+
+              // Check the response.
+              assert.equal(response.status, 200);
+              assert.property(response, 'redirects');
+              assert.match(response.redirects[0],
+                /http:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{0,5}\//,
+                'Thread actions should redirect to the board.');
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
         });
       });
     });
@@ -1422,11 +1600,11 @@ suite('Functional Tests', function() {
 
             assert.equal(response.status, 200);
             assert.match(response.get('content-type'),
-                         /text\/html/,
-                         'Content type should be text/html.');
+              /text\/html/,
+              'Content type should be text/html.');
             assert.equal(response.text,
-                         successMessage,
-                         'Success messages should be equal.');
+              successMessage,
+              'Success messages should be equal.');
           } catch (error) {
             console.log(error);
             throw error;
@@ -1472,11 +1650,11 @@ suite('Functional Tests', function() {
 
             assert.equal(response.status, 200);
             assert.match(response.get('content-type'),
-                         /text\/html/,
-                         'Content type should be text/html.');
+              /text\/html/,
+              'Content type should be text/html.');
             assert.equal(response.text,
-                         successMessage,
-                         'Success messages should be equal.');
+              successMessage,
+              'Success messages should be equal.');
           } catch (error) {
             console.log(error);
             throw error;
@@ -1524,19 +1702,19 @@ suite('Functional Tests', function() {
 
               for (let i = 0; i < invalidThreads.length; i++) {
                 let response = await chai.request(server)
-                    .put(testingReplyEndpoint)
-                    .send({
-                      'thread_id': invalidThreads[i],
-                      'reply_id': reply._id,
-                    });
+                  .put(testingReplyEndpoint)
+                  .send({
+                    'thread_id': invalidThreads[i],
+                    'reply_id': reply._id,
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1570,6 +1748,41 @@ suite('Functional Tests', function() {
 
               const thread = await threadModel.create(threadInfo);
 
+              for (let i = 0; i < invalidReplies.length; i++) {
+                let response = await chai.request(server)
+                  .put(testingReplyEndpoint)
+                  .send({
+                    'thread_id': thread._id,
+                    'reply_id': invalidReplies[i],
+                  });
+
+                assert.equal(response.status, 400);
+                assert.match(response.get('content-type'),
+                  /application\/json/,
+                  'Content type should be application/json.');
+                assert.equal(response.body.error,
+                  errorMessage,
+                  'Error messages should be equal.');
+              }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+        });
+
+        suite('malformed requests', function() {
+          test('non-existent board', async function() {
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
               // Create a reply.
               let replyModel = await Replies(testingBoardName);
               const replyInfo = {
@@ -1580,22 +1793,19 @@ suite('Functional Tests', function() {
 
               const reply = await replyModel.create(replyInfo);
 
-              for (let i = 0; i < invalidReplies.length; i++) {
-                let response = await chai.request(server)
-                    .put(testingReplyEndpoint)
-                    .send({
-                      'thread_id': thread._id,
-                      'reply_id': invalidReplies[i],
-                    });
+              let response = await chai.request(server)
+                .put('/api/replies/notreal')
+                .send({
+                  'thread_id': thread._id,
+                  'reply_id': reply._id,
+                });
 
-                assert.equal(response.status, 400);
-                assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
-                assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
-              }
+              // Check the response.
+              assert.equal(response.status, 200);
+              assert.property(response, 'redirects');
+              assert.match(response.redirects[0],
+                /http:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{0,5}\//,
+                'Thread actions should redirect to the board.');
             } catch (error) {
               console.log(error);
               throw error;
@@ -1700,20 +1910,20 @@ suite('Functional Tests', function() {
 
               for (let i = 0; i < invalidThreads.length; i++) {
                 let response = await chai.request(server)
-                    .delete(testingReplyEndpoint)
-                    .send({
-                      'thread_id': invalidThreads[i],
-                      'reply_id': reply._id,
-                      'delete_password': reply.delete_password
-                    });
+                  .delete(testingReplyEndpoint)
+                  .send({
+                    'thread_id': invalidThreads[i],
+                    'reply_id': reply._id,
+                    'delete_password': reply.delete_password
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1759,20 +1969,20 @@ suite('Functional Tests', function() {
 
               for (let i = 0; i < invalidReplies.length; i++) {
                 let response = await chai.request(server)
-                    .delete(testingReplyEndpoint)
-                    .send({
-                      'thread_id': thread._id,
-                      'reply_id': invalidReplies[i],
-                      'delete_password': reply.delete_password
-                    });
+                  .delete(testingReplyEndpoint)
+                  .send({
+                    'thread_id': thread._id,
+                    'reply_id': invalidReplies[i],
+                    'delete_password': reply.delete_password
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1811,20 +2021,20 @@ suite('Functional Tests', function() {
 
               for (let i = 0; i < invalidPasswords.length; i++) {
                 let response = await chai.request(server)
-                    .delete(testingReplyEndpoint)
-                    .send({
-                      'thread_id': thread._id,
-                      'reply_id': reply._id,
-                      'delete_password': invalidPasswords[i]
-                    });
+                  .delete(testingReplyEndpoint)
+                  .send({
+                    'thread_id': thread._id,
+                    'reply_id': reply._id,
+                    'delete_password': invalidPasswords[i]
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /application\/json/,
-                             'Content type should be application/json.');
+                  /application\/json/,
+                  'Content type should be application/json.');
                 assert.equal(response.body.error,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
             } catch (error) {
               console.log(error);
@@ -1866,21 +2076,64 @@ suite('Functional Tests', function() {
 
               for (let i = 0; i < incorrectPasswords.length; i++) {
                 let response = await chai.request(server)
-                    .delete(testingReplyEndpoint)
-                    .send({
-                      'thread_id': thread._id,
-                      'reply_id': reply._id,
-                      'delete_password': incorrectPasswords[i]
-                    });
+                  .delete(testingReplyEndpoint)
+                  .send({
+                    'thread_id': thread._id,
+                    'reply_id': reply._id,
+                    'delete_password': incorrectPasswords[i]
+                  });
 
                 assert.equal(response.status, 400);
                 assert.match(response.get('content-type'),
-                             /text\/html/,
-                             'Content type should be text/html.');
+                  /text\/html/,
+                  'Content type should be text/html.');
                 assert.equal(response.text,
-                             errorMessage,
-                             'Error messages should be equal.');
+                  errorMessage,
+                  'Error messages should be equal.');
               }
+            } catch (error) {
+              console.log(error);
+              throw error;
+            }
+          });
+        });
+
+        suite('malformed requests', function() {
+          test('non-existent board', async function() {
+            try {
+              // Create a thread.
+              let threadModel = await Threads(testingBoardName);
+              const threadInfo = {
+                'text': 'This is a test thread.',
+                'delete_password': 'password'
+              };
+
+              const thread = await threadModel.create(threadInfo);
+
+              // Create a reply.
+              let replyModel = await Replies(testingBoardName);
+              const replyInfo = {
+                'text': 'This is a test reply.',
+                'thread_id': thread._id,
+                'delete_password': 'password'
+              };
+
+              const reply = await replyModel.create(replyInfo);
+
+              let response = await chai.request(server)
+                .delete('/api/replies/notreal')
+                .send({
+                  'thread_id': thread._id,
+                  'reply_id': reply._id,
+                  'delete_password': 'password'
+                });
+
+              // Check the response.
+              assert.equal(response.status, 200);
+              assert.property(response, 'redirects');
+              assert.match(response.redirects[0],
+                /http:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{0,5}\//,
+                'Thread actions should redirect to the board.');
             } catch (error) {
               console.log(error);
               throw error;
